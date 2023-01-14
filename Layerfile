@@ -1,22 +1,16 @@
-FROM vm/ubuntu:18.04
-    
-# To note: Layerfiles create entire VMs, *not* containers!    
-RUN curl -fSsL https://deb.nodesource.com/setup_12.x | bash && \
-    apt-get install nodejs python3 make gcc build-essential \
-    libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb && \
-    rm -f /etc/apt/sources.list.d/nodesource.list
 
-# node is a memory hog
-MEMORY 2G
-ENV NODE_OPTIONS=--max-old-space-size=8192
-    
-COPY . .
-RUN mkdir cypress
-RUN npm install
-RUN BACKGROUND npm start
-RUN BACKGROUND cd cypress && python3 -m http.server 8000
+# Set the Framework (Base Image) for the Virtual Machine
+FROM webapp.io/docker:20.10
 
-RUN ./node_modules/.bin/cypress run
+# Download an example web server (can be removed later)
+RUN curl -fSsL https://github.com/filebrowser/filebrowser/releases/download/v2.21.1/linux-amd64-filebrowser.tar.gz \
+    | tar -C /usr/local/bin -xzf /dev/stdin
 
-# start a webserver to view test results
-EXPOSE WEBSITE http://localhost:8000
+# This line copies the whole repository to /root in the runner
+COPY / /root
+
+# This line runs the example webserver
+RUN BACKGROUND filebrowser --database /tmp/filebrowser.db \
+    --noauth --address 0.0.0.0 --port 80
+
+EXPOSE WEBSITE http://localhost:80
